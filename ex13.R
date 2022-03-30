@@ -190,8 +190,48 @@ car::vif(lm_1)
 
 #conclusion:
 # severe violation of regression assumptions
-# if select variables based on t-test results, limited number of variables will be selected. 
-# Bad model!
+# if select variables based on t-test results,
+# limited number of variables will be selected. 
+#but lets make a Bad model!
+summary(lm_1)
+lm_2 = lm(Salary~AtBat+Hits+Walks+Division+PutOuts,data = train)
+
+summary(lm_2)
+
+hist(lm_2$residuals,probability = T)
+plot(lm_2)
+
+car::vif(lm_2)
+
+#lets predict with this bad model
+
+pred_lm = predict(lm_2,test)
+#calculate errors
+
+abs_err_lm = abs(pred_lm-test$Salary)
+
+models_comp <- data.frame("Mean of AbsErrors"   = mean(abs_err_lm),
+                          "Median of AbsErrors" = median(abs_err_lm),
+                          "SD of AbsErrors"  = sd(abs_err_lm),
+                          "IQR of AbsErrors" = IQR(abs_err_lm),
+                          "Min of AbsErrors" = min(abs_err_lm),
+                          "Max of AbsErrors" = max(abs_err_lm), 
+                          row.names = 'LM_t-test')
+
+#actual vs predicted
+
+plot(test$Salary,pred_lm,xlab = "Actual",ylab = "prediction")
+abline(0,1,col="red",lwd=3)
+
+#model not good at all
+
+
+
+
+
+
+
+
 
 
 
