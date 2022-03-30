@@ -85,8 +85,131 @@ par(mfrow = c(3, 6))  # 3 rows and 6 columns
 for (i in c(1:13,16:19)) {
   hist(data2[,i],probability = T,main = paste("hist of",colnames(data2)[i]))
 }
+dev.off()
+par(mfrow=c(1,1))
+boxplot(data2$Salary,main="distribution salary")
 
-#13-1 47:12
+#identify outliers
+# we haven't any data lower than range tukey so just higher outlier calc
+
+tukey_ul = quantile(data2$Salary,probs = 0.75)+1.5*IQR(data2$Salary)
+sum(data2$Salary>tukey_ul)
+dim(data2)
+#11/263=4% data are outliers
+
+#correlation analysis
+
+cor_table = round(cor(data2[,c(19,1:13,16:18)]),2)
+#draw correlation graph 
+corrplot(cor_table)
+
+#we can see correlation between salary and most features 
+#but another topic that attract our attention is two block
+#of variable that have considerable correlation to each other
+#its giving the vibe of multicollinearity problem
+
+#correlation only show linear relationship between var
+#but in scatter plot we can find out if there is any other
+#kind of relation between response var and other var or not
+
+#scatter plot response var with other variable
+
+par(mfrow=c(3,6))
+par(mar=c(2,2,2,2))
+for(i in c(1:13,16:18)){
+  plot(data2[,i],data2$Salary,main=paste(colnames(data2)[i]))
+}
+
+#categorical data
+table(data2$League)
+table(data2$Division)
+table(data2$NewLeague)
+dev.off()
+
+#we have enough data in groups
+
+#check influence categorical data on salary
+tapply(data2$Salary,data2$League,mean)
+tapply(data2$Salary,data2$Division,mean)
+tapply(data2$Salary,data2$NewLeague,mean)
+
+#we can run statistical test in this groups
+
+
+#----divide data to train and test----
+set.seed(1234)
+
+train_case = sample(1:nrow(data2),size = nrow(data2)*0.8)
+train = data2[train_case,]
+
+test = data2[-train_case,]
+
+summary(train)
+summary(test)
+
+#train data set with out outliers----
+trimmed_train = train[-which(train$Salary>tukey_ul),]
+dim(trimmed_train)
+
+#model with simple linear regression----
+
+lm_1 = lm(Salary~.,data = train)
+
+summary(lm_1)
+
+#p-value for F test is <0.05 so there is at least one features 
+#that have linear relation with salary
+
+#then take look at t test and know which features have good score
+
+#only four of them :)
+
+#don't rush to eliminate features from model lets look at 
+#residual distribution and find out are they following
+#normal distribution
+
+hist(lm_1$residuals,breaks = 100,probability = T)
+lines(density(lm_1$residuals),col="red")
+
+qqnorm(lm_1$residuals)
+qqline(lm_1$residuals,col="red")
+
+jarque.test(lm_1$residuals)
+anscombe.test(lm_1$residuals)
+
+#both p-value under 0.05 and normality assumption rejected :(
+
+plot(lm_1)
+#the residual vs actual have pattern like cone
+#qqplot has problem on each tale
+#some data in Cooks distance on margin
+
+#check multicollinearity 
+car::vif(lm_1)
+#sum features have very big vif and most of them are more than 10
+
+#conclusion:
+# severe violation of regression assumptions
+# if select variables based on t-test results, limited number of variables will be selected. 
+# Bad model!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
