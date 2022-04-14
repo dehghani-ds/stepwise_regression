@@ -278,6 +278,7 @@ summary(bestsub_1)$rsq
 #difference variables because model that have biggest variables always
 #have bigger r-squared
 
+#we choose adjusted r-squared first to choose best model
 plot(summary(bestsub_1)$adjr2,
      type = "b",
      xlab = "# of Variables", 
@@ -289,6 +290,114 @@ axis(1, at = 1: 19, labels = 1: 19)
 points(which.max(summary(bestsub_1)$adjr2), 
        summary(bestsub_1)$adjr2[which.max(summary(bestsub_1)$adjr2)],
        col = "red", cex = 2, pch = 20)
+#plot show us that model with 11 variables is the best model
+
+#we can also use cp criteria to choose best model
+#Cp = 1/n * (SSE + 2 * d * sigma_hat ^ 2)
+# as we know we like the SSE to be minimum same for cp 
+plot(summary(bestsub_1)$cp)
+
+plot(summary(bestsub_1)$cp,
+     type = "b",
+     xlab = "# of Variables", 
+     ylab = "Cp", 
+     xaxt = 'n',
+     xlim = c(1, 19)); grid()
+axis(1, at = 1: 19, labels = 1: 19)
+points(which.min(summary(bestsub_1)$cp), 
+       summary(bestsub_1)$cp[which.min(summary(bestsub_1)$cp)],
+       col = "red", cex = 2, pch = 20)
+#in this case model with 8 variables is the best
+
+#or we can use BIC method
+#BIC
+#BIC (Bayesian Information Criterion ) =  -2 * LogLikelihood  + log(n) * d
+# n: the number of samples 
+# d: the number of predictors
+plot(summary(bestsub_1)$bic,
+     type = "b",
+     xlab = "# of Variables", 
+     ylab = "BIC", 
+     xaxt = 'n',
+     xlim = c(1, 19)); grid()
+axis(1, at = 1: 19, labels = 1: 19)
+points(which.min(summary(bestsub_1)$bic), 
+       summary(bestsub_1)$bic[which.min(summary(bestsub_1)$bic)],
+       col = "red", cex = 2, pch = 20)
+# in this method 3variables model is the best but we know its not 
+# acceptable for us (not enough variable)
+
+#we choose result adjusted r-squared which offer us 11 variables
+#how access to coeficient of this model
+coef(bestsub_1,11)
+
+#we can see which features selected 
+#AtBat,Hits,Walks,Years,CAtBat,CHmRun,CRBI,CWalks,League,
+#Division,PutOuts
+
+bestsub_2 = lm(log_salary~AtBat+Hits+Walks+Years+CAtBat+
+                 CHmRun+CRBI+CWalks+League+Division+PutOuts,data = train)
+summary(bestsub_2)
+
+plot(bestsub_2)
+
+hist(bestsub_2$residuals)
+
+#with best subset methodology, t-test result and multicollinearity 
+#isn't important 
+# t-test is not important because we are running all possible modeling
+# and best model going to be choose
+#also multicollinearity problem isn't matter because if we have this problem
+# t-test result going under question.we don't use t-test result so
+#multicollinearity problem is not important
+
+#----test model with 11 variables, method best subset----
+pred_bestsub = predict(bestsub_2,test)
+
+#we are predicting log(salary)
+
+pred_bestsub = exp(pred_bestsub)
+
+#calculating error 
+
+abs_err_bestsub = abs(pred_bestsub-test$Salary)
+models_comp <- rbind(models_comp, 'BestSubset_AdjR2' = c(mean(abs_err_bestsub),
+                                                         median(abs_err_bestsub),
+                                                         sd(abs_err_bestsub),
+                                                         IQR(abs_err_bestsub),
+                                                         range(abs_err_bestsub)))
+#actual vs prediction
+
+plot(test$Salary, pred_bestsub, main = 'BestSubset_AdjR2',
+     xlim = c(0, 2000), ylim = c(0, 2000),
+     xlab = "Actual", ylab = "Prediction")
+abline(a = 0, b = 1, col = "red", lwd = 2)
+
+#this methodology has a lot of calculating cost and not good for
+#problem that have a lot of variables
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
