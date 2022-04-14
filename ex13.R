@@ -225,8 +225,70 @@ abline(0,1,col="red",lwd=3)
 
 #model not good at all
 
+#box-cox transformation ----------
 
+hist(data$Salary)
+#because our response variable is skewed its give the hint to us
+#that it may be help our modeling to box-cox transform our response var
+#for better modeling
+box_results = boxcox(train$Salary~.,data=train,lambda = seq(-5,5,0.1))
+box_results=data.frame(box_results$x,box_results$y)
+lambda=box_results[which(box_results$box_results.y==max(box_results$box_results.y)),1]
+lambda
+# we calculate lambda for box-cox transformation 0.1 but when we look at 
+# the graph we can see that ZERO(0) is in confidence interval
+# in this case we should transfer with log function
 
+#log salary 
+train$log_salary = log(train$Salary)
+View(train)
+
+#model on log salary 
+lm_logresp_1 = lm(log_salary~.-Salary,data = train)
+
+summary(lm_logresp_1)
+
+#check assumption of regression
+
+hist(lm_logresp_1$residuals,breaks = 100)
+qqnorm(lm_logresp_1$residuals)
+qqline(lm_logresp_1$residuals,col="red")
+
+skewness(lm_logresp_1$residuals)
+kurtosis(lm_logresp_1$residuals)
+
+plot(lm_logresp_1)
+car::vif(lm_logresp_1)
+
+#model have multicollinearity problem and also a little 
+# heteroscedasticity problem
+# in conclusion predicting log salary can help us alittle in predicting 
+#because heteroscedasticity problem a little solved
+
+# and we are not using much of variables
+
+#---- best subset selection ----
+bestsub_1 = regsubsets(log_salary~.-Salary,nvmax = 19,data = train,method = "exhaustive")
+summary(bestsub_1)
+
+#model selection 
+#r-squared
+summary(bestsub_1)$rsq
+#clearly r-squared isn't good tools for compare models which have 
+#difference variables because model that have biggest variables always
+#have bigger r-squared
+
+plot(summary(bestsub_1)$adjr2,
+     type = "b",
+     xlab = "# of Variables", 
+     ylab = "AdjR2", 
+     xaxt = 'n',
+     xlim = c(1, 19)); grid()
+axis(1, at = 1: 19, labels = 1: 19)
+
+points(which.max(summary(bestsub_1)$adjr2), 
+       summary(bestsub_1)$adjr2[which.max(summary(bestsub_1)$adjr2)],
+       col = "red", cex = 2, pch = 20)
 
 
 
