@@ -376,17 +376,33 @@ abline(a = 0, b = 1, col = "red", lwd = 2)
 #this methodology has a lot of calculating cost and not good for
 #problem that have a lot of variables
 
+#---- forward step wise regression ----
 
+fwd_1 = regsubsets(log_salary~.-Salary,nvmax = 19,data = train,method = "forward")
 
+which.max(summary(fwd_1)$adjr2)#12
+which.min(summary(fwd_1)$cp)#8
+which.min(summary(fwd_1)$bic)#3
 
+#in forward selection we are using features from last step and add one 
+#more features 
+#its reduce calculating cost a lot
+#----?----
+coef(fwd_1,12)
+coef(fwd_1,8)
+coef(fwd_1,3)
+#backward 
 
+#reverse forward selection
+bwd_1 <- regsubsets(log_salary ~ . - Salary, nvmax = 19, data = train, method = "backward")
+summary(bwd_1)
 
+which.max(summary(bwd_1)$adjr2)
+which.min(summary(bwd_1)$cp)
+which.min(summary(bwd_1)$bic)
 
-
-
-
-
-
+#the important issue in this lecture we should know is that features 
+#in features selection method may not be same as each other
 
 
 
