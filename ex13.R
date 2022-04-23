@@ -404,12 +404,111 @@ which.min(summary(bwd_1)$bic)
 #the important issue in this lecture we should know is that features 
 #in features selection method may not be same as each other
 
+#Inspect different models (Do it yourself)؟؟؟؟؟؟-----
 
+#using k-fold cross validation instead of :adjusted r squared \ CP \BIC
+#model 3: k-fold cross validation ----
+k=10
+set.seed(123)
+folds = sample(1:10,nrow(train),rep=T)
 
+#here we produce label for each row that show in which fold it should 
+#be putted
 
+#make error matrix that we can compare and say which model is better
+cv_errors <- matrix(NA, k, 19, dimnames = list(NULL , paste(1: 19)))
+cv_errors
+#run 19 regression
 
+#Prediction function
+#using design matrix 
+#---- Important----
+predict_regsubsets = function(object, newdata, id) {
+  reg_formula <- as.formula(object$call[[2]])
+  mat    <- model.matrix(reg_formula, newdata)
+  coef_i <- coef(object, id = id)
+  mat[, names(coef_i)] %*% coef_i
+}
 
+set.seed(1234)
+for(i in 1: 19){
+  for(j in 1: k){
+    best_fit <- regsubsets(log_salary ~ . - Salary, data = train[folds != j,], nvmax = 19, method = "exhaustive")
+    pred <- predict_regsubsets(best_fit, newdata = train[folds == j,], id = i)
+    cv_errors[j, i] <- mean((train$log_salary[folds == j] - pred) ^ 2)
+  }
+}
 
+View(cv_errors)
+mean_cv_erros <- apply(cv_errors, 2, mean)
+mean_cv_erros 
+plot(mean_cv_erros, type = "b")
+which.min(mean_cv_erros)#8
+
+#Coefficients of the best model
+coef(bestsub_1, 8) #Model w/ 8 variables
+bestsub_cv <- lm(log_salary ~ AtBat + Hits + HmRun + Walks + 
+                   Years + CAtBat + League + Division, data = train)
+summary(bestsub_cv)
+
+#Test the Model----------------------------------
+#Model: bestsub_cv
+#Prediction
+pred_bestsub_cv <- predict(bestsub_cv, test)
+pred_bestsub_cv <- exp(pred_bestsub_cv)
+
+#Absolute error mean, median, sd, max, min-------
+abs_err_bestsub_cv <- abs(pred_bestsub_cv - test$Salary)
+models_comp <- rbind(models_comp, 'BestSubset_CV' = c(mean(abs_err_bestsub_cv),
+                                                      median(abs_err_bestsub_cv),
+                                                      sd(abs_err_bestsub_cv),
+                                                      IQR(abs_err_bestsub_cv),
+                                                      range(abs_err_bestsub_cv)))
+View(models_comp)
+#Actual vs. Predicted
+plot(test$Salary, pred_bestsub_cv, main = 'BestSubset_CV',
+     xlim = c(0, 2000), ylim = c(0, 2000),
+     xlab = "Actual", ylab = "Prediction")
+abline(a = 0, b = 1, col = "red", lwd = 2)
+
+#Model 4: Best Sub Selection Using Trimmed Train and CV--------------
+#Add Log Salary
+trimmed_train$Log_Salary <- log(trimmed_train$Salary)
+trimmed_bestsub_1 <- regsubsets(Log_Salary ~ . - Salary, nvmax = 19, data = trimmed_train, method = "exhaustive")
+
+which.max(summary(trimmed_bestsub_1)$adjr2)
+which.min(summary(trimmed_bestsub_1)$cp)
+which.min(summary(trimmed_bestsub_1)$bic)
+
+#Coefficients of the best model
+coef(trimmed_bestsub_1, 10) #Model w/ 10 variables
+trimmed_bestsub_2 <- lm(Log_Salary ~ AtBat + Hits + HmRun + Walks + 
+                          Years + CAtBat + CHmRun + CRBI + CWalks + 
+                          League, data = trimmed_train)
+summary(trimmed_bestsub_2)
+#Test the Model----------------------------------
+#Prediction
+pred_trimmed_bestsub  <- predict(trimmed_bestsub_2, test)
+pred_trimmed_bestsub  <- exp(pred_trimmed_bestsub)
+pred_trimmed_bestsub
+#Absolute error mean, median, sd, max, min-------
+abs_err_trimmed_bestsub <- abs(pred_trimmed_bestsub - test$Salary)
+models_comp <- rbind(models_comp, 'BestSubset_Trimmed' = c(mean(abs_err_trimmed_bestsub),
+                                                           median(abs_err_trimmed_bestsub),
+                                                           sd(abs_err_trimmed_bestsub),
+                                                           IQR(abs_err_trimmed_bestsub),
+                                                           range(abs_err_trimmed_bestsub)))
+View(models_comp)
+
+#Actual vs. Predicted
+plot(test$Salary, pred_trimmed_bestsub, main = 'BestSubset_Trimmed',
+     xlim = c(0, 2000), ylim = c(0, 2000),
+     xlab = "Actual", ylab = "Prediction")
+abline(a = 0, b = 1, col = "red", lwd = 2)
+
+#Save the results--------------------------------
+save(data2, train, test, models_comp, file = "case4_dataset_v1.R")
+###End of Code###--------------------------------
 
 
 
